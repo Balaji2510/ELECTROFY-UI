@@ -26,7 +26,7 @@ import { electrofyStore } from '../../electrofy-store';
               <span class="text-2xl font-bold text-gray-900">
                 &#8377;{{ product().price.toFixed(2) }}
               </span>
-              <button matButton="filled" class="flex items-center gap-2" (click)="addtoCartClicked.emit(product())" [disabled]="!product().inStock">
+              <button matButton="filled" class="flex items-center gap-2" (click)="addtoCart(product())" [disabled]="!product().inStock">
                 <mat-icon>shopping_cart</mat-icon>
                 Add to Cart
               </button>
@@ -39,6 +39,8 @@ import { electrofyStore } from '../../electrofy-store';
 export class ProductCard {
 
   product = input.required<Product>();
-  addtoCartClicked = output<Product>();
   store = inject(electrofyStore);
+  addtoCart(product: Product) {
+    this.store.addToCart(product);
+  }
 }

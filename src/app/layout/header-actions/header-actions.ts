@@ -14,7 +14,7 @@ import { electrofyStore } from '../../electrofy-store';
        <button matIconButton aria-label="Wishlist" routerLink="/wishlist" [matBadge]="store.wishlistItems().length" [matBadgeHidden]="store.wishlistItems().length==0" matBadgeColor="warn">
         <mat-icon >favorite</mat-icon>
       </button>
-      <button matIconButton aria-label="Shopping Cart">
+      <button matIconButton aria-label="Shopping Cart" routerLink="/cart" [matBadge]="store.cartItems().length" [matBadgeHidden]="store.cartItems().length==0" matBadgeColor="warn">
         <mat-icon>shopping_cart</mat-icon>
       </button>
       <!-- <button matIconButton aria-label="Notifications">

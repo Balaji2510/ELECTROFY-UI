@@ -8,7 +8,7 @@ export type electrofyStore = {
     category: string;
     wishlistItems: Product[];
     cartItems: Product[];
-    isSidebarOpen: boolean;
+   isSidebarOpen: boolean;
 };
 
 export const electrofyStore = signalStore(
@@ -58,8 +58,8 @@ export const electrofyStore = signalStore(
         cartItems: [],
         isSidebarOpen: true
     }),
-    withComputed(({ products, category }) => ({
-        filteredProducts: computed(() => {
+    withComputed(({ products, category }) => ({        
+        filteredProducts: computed(() => {         
             if (category().toLowerCase() === 'all') {
                 return products();
             } else {
@@ -68,7 +68,7 @@ export const electrofyStore = signalStore(
         })
     })),
     withMethods((store,toaster=inject(Toaster)) => ({
-        setCategory(newCategory: string) {
+        setCategory(newCategory: string) {                   
             patchState(store, { category: newCategory });
         },
         addToWishlist(product: Product) {

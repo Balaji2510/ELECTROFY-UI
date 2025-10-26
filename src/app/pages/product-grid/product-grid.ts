@@ -1,4 +1,4 @@
-import { Component, computed, signal, input, inject } from '@angular/core';
+import { Component, signal, input, inject, effect } from '@angular/core';
 import { Product } from '../../models/product';
 import { ProductCard } from '../../components/product-card/product-card';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -13,7 +13,7 @@ import { ToggleWishlistButton } from "../../components/toggle-wishlist-button/to
   imports: [ProductCard, MatSidenavModule, MatNavList, MatListItem, MatListItemTitle, RouterLink, TitleCasePipe, ToggleWishlistButton],
   template: `
   <mat-sidenav-container>
-    <mat-sidenav mode="side" [opened]="this.store.issideNavOpened()? true : false" class="w-64 bg-white h-full shadow-md">
+    <mat-sidenav mode="side" [opened]="store.issideNavOpened()" >
       <div class="p-6">
         <h2 class="text-lg text-gray-900">Categories</h2>
         <mat-nav-list>
@@ -36,7 +36,7 @@ import { ToggleWishlistButton } from "../../components/toggle-wishlist-button/to
 
     <div class="responsive-grid">
       @for(product of store.filteredProducts(); track product.id){
-      <app-product-card [product]="product" (addtoCartClicked)="addToCart($event)">
+      <app-product-card [product]="product">
         <app-toggle-wishlist-button [product]="product" class="!absolute z-10 top-3 right-3"></app-toggle-wishlist-button>
       </app-product-card>     
       }
@@ -79,11 +79,15 @@ export class ProductGrid {
   ]);
 
   addToCart(product: Product) {
-    console.log('Add to Cart clicked for product:', product);
+    this.store.addToCart(product);
   }
 
   constructor() {
-    this.store.setCategory(this.category());
+    effect(() => {
+      this.store.setCategory(this.category());
+    });
+    
   }
+
 
 }
