@@ -1,14 +1,16 @@
-import { Component,input, output} from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { Product } from '../../models/product';
 import { MatAnchor } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { electrofyStore } from '../../electrofy-store';
 
 @Component({
   selector: 'app-product-card',
   imports: [MatAnchor, MatIcon],
   template: `
-    <div class="bg-white cursor-pointer rounded-xl shadow-md overflow-hidden flex flex-col h-full hover:shadow-xl transition-shadow duration-300">
+    <div class="relative bg-white cursor-pointer rounded-xl shadow-md overflow-hidden flex flex-col h-full hover:shadow-xl transition-shadow duration-300">
           <img [src]="product().imageUrl" alt="{{ product().name }}" class="w-full h-[300px] object-cover rounded-t-xl">
+          <ng-content/>
           <div class="p-5 flex flex-col justify-between h-full">
             <h3 class="text-lg font-semibold text-gray-900 mb-2 leading-light">
               {{ product().name }}
@@ -36,6 +38,7 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class ProductCard {
 
-  product=input.required<Product>();
-  addtoCartClicked=output<Product>();
+  product = input.required<Product>();
+  addtoCartClicked = output<Product>();
+  store = inject(electrofyStore);
 }
