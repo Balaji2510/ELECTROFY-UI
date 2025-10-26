@@ -86,10 +86,24 @@ export const electrofyStore = signalStore(
             toaster.success('Added to cart');
 
         },
+        removeFromCart(product: Product) {
+            const updatedCart = produce(store.cartItems(), (draft: Product[]) => {
+                const index = draft.findIndex(item => item.id === product.id); 
+                if (index !== -1) {
+                    draft.splice(index, 1);
+                }
+            });
+            patchState(store, { cartItems: updatedCart });
+            toaster.success('Removed from cart');
+        },
         clearWishlist() {
             patchState(store, { wishlistItems: [] });
             toaster.success('Wishlist cleared');
         },
+        clearCartItems() {
+            patchState(store, { cartItems: [] });
+            toaster.success('Cart cleared');
+        }, 
         issideNavOpened() {
             return store.isSidebarOpen();
         },
