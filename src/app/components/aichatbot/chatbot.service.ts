@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import '@tensorflow/tfjs'; // Import for side effects (backend registration)
 import { QuestionAndAnswer, load } from '@tensorflow-models/qna';
 
 export interface Intent {
