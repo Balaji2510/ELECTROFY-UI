@@ -3,7 +3,6 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, window } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { environment as environmentProd } from '../../environments/environment.prod';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -25,13 +24,9 @@ export interface ApiResponse<T = any> {
 export class ApiService {
   private baseUrl: string;
 
+
   constructor(private http: HttpClient) {
-   this.baseUrl = environment.apiUrl;
-   if(environment.production){
-    this.baseUrl =  environmentProd.apiUrl;    
-   } else{
-    this.baseUrl = environment.apiUrl;    
-   }
+    this.baseUrl = environment.apiUrl;
   }
 
   /**
@@ -175,4 +170,3 @@ export class ApiService {
     return throwError(() => new Error(errorMessage));
   };
 }
-
