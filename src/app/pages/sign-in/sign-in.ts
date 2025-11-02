@@ -1,6 +1,6 @@
-import { AfterViewInit, Component, NgZone, inject } from '@angular/core';
+import { AfterViewInit, Component, NgZone, inject, signal } from '@angular/core';
 import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from "@angular/material/card";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
@@ -13,7 +13,7 @@ declare const google: any;
 
 @Component({
   selector: 'app-sign-in',
-  imports: [MatCard, MatCardHeader, MatCardTitle, MatCardContent, MatFormField, MatInput, MatButton, MatDivider, MatIcon, MatLabel, ReactiveFormsModule, RouterLink],
+  imports: [MatCard, MatCardHeader, MatCardContent, MatFormField, MatInput, MatButton, MatDivider, MatLabel, MatError, ReactiveFormsModule, RouterLink],
   template: `
     <div class="flex items-center justify-center h-full p-4 bg-gray-100">
       <mat-card class="w-full max-w-md">
@@ -32,12 +32,44 @@ declare const google: any;
             <mat-form-field class="w-full" appearance="outline">
               <mat-label>Email</mat-label>
               <input matInput formControlName="email" type="email" placeholder="Enter your email">
+              @if (signInForm.get('email')?.invalid && signInForm.get('email')?.touched) {
+                <mat-error>
+                  @if (signInForm.get('email')?.errors?.['required']) {
+                    Email is required
+                  } @else if (signInForm.get('email')?.errors?.['email']) {
+                    Please enter a valid email
+                  }
+                </mat-error>
+              }
             </mat-form-field>
             <mat-form-field class="w-full" appearance="outline">
               <mat-label>Password</mat-label>
               <input matInput formControlName="password" type="password" placeholder="Enter your password">
+              @if (signInForm.get('password')?.invalid && signInForm.get('password')?.touched) {
+                <mat-error>
+                  Password is required
+                </mat-error>
+              }
             </mat-form-field>
-            <button mat-flat-button color="primary" class="w-full" [disabled]="signInForm.invalid">Sign In</button>
+            
+            @if (errorMessage()) {
+              <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {{ errorMessage() }}
+              </div>
+            }
+
+            <button 
+              mat-flat-button 
+              color="primary" 
+              class="w-full" 
+              [disabled]="signInForm.invalid || isLoading()"
+              type="submit">
+              @if (isLoading()) {
+                <span>Signing In...</span>
+              } @else {
+                <span>Sign In</span>
+              }
+            </button>
           </form>
           <div class="text-center mt-4">
             <a routerLink="/forgot-password" class="text-sm text-blue-600 hover:underline">Forgot password?</a>
@@ -62,10 +94,29 @@ export class SignIn implements AfterViewInit {
     password: ['', Validators.required]
   });
 
-  onSubmit() {
+  isLoading = signal(false);
+  errorMessage = signal<string>('');
+
+  async onSubmit() {
     if (this.signInForm.valid) {
-      console.log('Form Submitted!', this.signInForm.value);
-      // Handle sign-in logic here
+      this.isLoading.set(true);
+      this.errorMessage.set('');
+
+      try {
+        const { email, password } = this.signInForm.value;
+        await this.authService.login(email!, password!);
+
+        
+        // Redirect to products page on success
+        this.ngZone.run(() => {
+          this.router.navigate(['/products/all']);
+        });
+      } catch (error: any) {
+        this.errorMessage.set(error.message || 'Login failed. Please check your credentials.');
+        console.error('Login error:', error);
+      } finally {
+        this.isLoading.set(false);
+      }
     }
   }
 
@@ -93,22 +144,34 @@ export class SignIn implements AfterViewInit {
     );
   }
 
-  private handleCredentialResponse(response: any) {
-    // Here you would handle the credential response.
-    // This usually involves sending the credential (response.credential) to your backend for verification.
-    console.log('Encoded JWT ID token: ' + response.credential);
-    
-    // Decode the JWT token to get user information
-    const decodedToken = this.decodeJwt(response.credential);
-    console.log('Decoded JWT payload:', decodedToken);
-    
-    // Set user in AuthService
-    this.authService.setCurrentUser(decodedToken);
-    
-    // For now, let's navigate to another route on successful sign-in, inside NgZone
-    this.ngZone.run(() => {
-      this.router.navigate(['/products/all']);
-    });
+  private async handleCredentialResponse(response: any) {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    try {
+      // Decode the JWT token to get user information
+      const decodedToken = this.decodeJwt(response.credential);
+      console.log(decodedToken);
+      
+      
+      // Call API for Google OAuth login
+      await this.authService.loginWithGoogle({
+        id: decodedToken.sub,
+        name: decodedToken.name,
+        email: decodedToken.email,
+        picture: decodedToken.picture
+      });
+
+      // Navigate to products page on success
+      this.ngZone.run(() => {
+        this.router.navigate(['/products/all']);
+      });
+    } catch (error: any) {
+      this.errorMessage.set(error.message || 'Google sign-in failed. Please try again.');
+      console.error('Google sign-in error:', error);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
   private decodeJwt(token: string): any {
     const base64Url = token.split('.')[1];

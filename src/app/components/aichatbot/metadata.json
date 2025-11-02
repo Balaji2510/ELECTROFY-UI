@@ -1,0 +1,4 @@
+{
+    "words": ["a", "anyone", "are", "bye", "can", "cards", "cash", "credit", "day", "delivery", "do", "does", "for", "good", "goodbye", "hello", "help", "helpful", "hey", "hi", "how", "i", "is", "items", "kinds", "later", "long", "lot", "mastercard", "my", "of", "only", "pay", "paypal", "see", "sell", "shipping", "take", "thank", "thanks", "that's", "the", "there", "to", "what", "when", "which", "you"],
+    "classes": ["delivery", "goodbye", "greeting", "items", "payments", "thanks"]
+}

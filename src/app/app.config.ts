@@ -1,5 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { provideHotToastConfig } from '@ngxpert/hot-toast';
@@ -10,5 +11,6 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes,withComponentInputBinding()), 
     provideHotToastConfig({style:{marginTop: '70px'},stacking: 'depth',duration:2000}),
+    provideHttpClient(withInterceptorsFromDi()),
   ]
 };

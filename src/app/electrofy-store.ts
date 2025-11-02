@@ -1,48 +1,38 @@
-import { computed, inject } from "@angular/core";
+import { computed, inject, effect } from "@angular/core";
 import { Product } from "./models/product";
 import { patchState, signalStore, withComputed, withMethods, withState } from "@ngrx/signals";
 import { produce } from "immer";
 import { Toaster } from "./services/toaster";
+import { ProductService } from "./services/product.service";
+import { CartService } from "./services/cart.service";
+import { WishlistService } from "./services/wishlist.service";
+import { AuthService } from "./services/auth.service";
+import { Category, CategoryService } from "./services/category.service";
+
 export type electrofyStore = {
     products: Product[];
     category: string;
     wishlistItems: Product[];
     cartItems: Product[];
     isSidebarOpen: boolean;
+    loading: boolean;
+    categories: Category[];
 };
 
 export const electrofyStore = signalStore(
     {
         providedIn: 'root'
     },
-    withState({
-        products: [ // Indian Products
-            { id: 1, name: 'Micromax IN Note 2', description: 'Sleek Indian smartphone with an AMOLED display and fast charging.', price: 12499, imageUrl: "https://naxontech.com/wp-content/uploads/2022/02/Micromax-In-Note-2.jpg", isFavorite: false, rating: 4.1, ratingsCount: 850, inStock: true, category: 'Phones' },
-            { id: 2, name: 'JioBook 4G', description: 'Affordable 4G-enabled laptop for learning and browsing, from an Indian telecom giant.', price: 15799, imageUrl: "https://th.bing.com/th/id/OIP.zWS5o5lv0evCyNVrvICyjQHaFj?w=204&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3", isFavorite: true, rating: 3.8, ratingsCount: 1200, inStock: true, category: 'Laptops' },
-            { id: 3, name: 'Boat Rockerz 550 Pro', description: 'Indian-brand over-ear wireless headphones with long battery life and punchy bass.', price: 3499, imageUrl: 'https://th.bing.com/th/id/OIP.fBgi9T_7PEVW9_rzaDyFqAHaHa?w=177&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: true, rating: 4.1, ratingsCount: 2150, inStock: true, category: 'Audio' },
-            { id: 4, name: 'Noise ColorFit Pro 4', description: 'Affordable Indian wearable with fitness tracking, SpO2 and customizable watch faces.', price: 2999, imageUrl: 'data:image/webp;base64,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', isFavorite: false, rating: 4.0, ratingsCount: 987, inStock: true, category: 'Wearables' },
-            { id: 5, name: 'Ambrane 20000mAh Power Bank', description: 'Reliable Indian-brand power bank with fast charging and compact design.', price: 1499, imageUrl: 'https://th.bing.com/th/id/OIP.KtM8COCHastu0LYuZYmfVAHaKG?w=141&h=193&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.2, ratingsCount: 1410, inStock: true, category: 'Accessories' },
-            { id: 6, name: 'Saregama Carvaan', description: 'Preloaded Indian retro music player with classic songs and Bluetooth connectivity.', price: 5990, imageUrl: 'https://th.bing.com/th/id/OIP.pTu76zvik7zL9sQvQbj8KQHaE6?w=295&h=196&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: true, rating: 4.5, ratingsCount: 1890, inStock: true, category: 'Audio' },
-            { id: 7, name: 'Vu Premium 4K TV (55 inch)', description: 'Indian brand 4K TV with HDR support and smart features.', price: 35999, imageUrl: 'https://th.bing.com/th/id/OIP.REN7Htcbn3RGkHuLZAs5GQHaFF?w=268&h=184&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.3, ratingsCount: 550, inStock: true, category: 'TVs' },
-            { id: 8, name: 'Wipro Smart Bulb 9W', description: 'Dimmable RGB smart bulb from a trusted Indian brand, with app and voice control.', price: 699, imageUrl: 'https://th.bing.com/th/id/OIP.WyItw3SSTQkt_dmosMN7sQHaHa?w=197&h=197&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.1, ratingsCount: 1200, inStock: true, category: 'Smart Home' },
-            { id: 9, name: 'Prestige Induction Cooktop', description: 'Well-known Indian kitchen appliance with multiple preset modes and auto-pan detection.', price: 2499, imageUrl: 'data:image/webp;base64,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', isFavorite: false, rating: 4.2, ratingsCount: 320, inStock: true, category: 'Kitchen' },
-            { id: 10, name: 'IFB Front Load Washer 8kg', description: 'Popular Indian washing machine with energy-efficient motor and quick wash modes.', price: 32999, imageUrl: 'https://th.bing.com/th/id/OIP.ddimMAyrPAr8Ut9AcDEM2wHaHa?w=195&h=195&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.3, ratingsCount: 145, inStock: true, category: 'Home Appliances' },
-            { id: 11, name: 'Atomberg Renesa Smart+ Fan', description: 'Energy efficient BLDC motor ceiling fan with remote control, made in India.', price: 3680, imageUrl: 'https://th.bing.com/th/id/OIP.dzv1rVK6YE3LxUSyxk_2-QHaEl?w=226&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3g', isFavorite: false, rating: 4.6, ratingsCount: 950, inStock: true, category: 'Home Appliances' },
-            { id: 12, name: 'TVS-E Bharat Gold Keyboard', description: 'Durable mechanical keyboard, a long-standing favorite for Indian offices.', price: 2100, imageUrl: 'https://th.bing.com/th/id/OIP.dNlNLUN3xKqWEWdeUyG8MQHaDG?w=302&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.4, ratingsCount: 450, inStock: true, category: 'Peripherals' },
-            { id: 13, name: 'Zebronics Zeb-Thunder Headphones', description: 'Affordable wireless headphones with a comfortable design and FM radio.', price: 699, imageUrl: 'data:image/webp;base64,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', isFavorite: false, rating: 3.9, ratingsCount: 3500, inStock: true, category: 'Audio' },
-            { id: 14, name: 'CP Plus 2MP Wi-Fi Camera', description: 'Indian brand security camera with night vision and two-way talk.', price: 1899, imageUrl: 'https://th.bing.com/th/id/OIP.1K5X6eM2j7n2hr5ZkLKNlQHaIR?w=158&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.0, ratingsCount: 780, inStock: true, category: 'Cameras' },
-            { id: 15, name: 'Usha Steam Iron', description: 'A popular choice in Indian households for reliable and effective ironing.', price: 1299, imageUrl: 'https://th.bing.com/th/id/OIP.p3cEriwmM96IqO-e13RCqwHaFj?w=247&h=185&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.2, ratingsCount: 650, inStock: true, category: 'Home Appliances' },
-            { id: 16, name: 'Voltas 1.5 Ton AC', description: 'A leading Indian brand for air conditioners, known for its reliability and cooling.', price: 32990, imageUrl: 'https://th.bing.com/th/id/OIP.oDJ6Uzzi2mCTsePAjbWkzQHaCs?w=350&h=127&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.3, ratingsCount: 890, inStock: true, category: 'Home Appliances' },
-            { id: 17, name: 'Ola S1 Pro Electric Scooter', description: 'Feature-rich electric scooter from an Indian startup, offering great performance.', price: 129999, imageUrl: 'https://www.scooters4sale.in/pictures/default/ola-s1-pro/ola-s1-pro-640.jpg', isFavorite: true, rating: 4.4, ratingsCount: 1100, inStock: true, category: 'Vehicles' },
-            { id: 18, name: 'Mivi Roam 2 Speaker', description: 'Compact and portable Bluetooth speaker designed in India, with 24 hours of playtime.', price: 1199, imageUrl: 'https://cdn.pixelbin.io/v2/central_imaging/original/Aplusimaging/Batch_1_Pilot/Internal/591294860/Module2.jpeg', isFavorite: false, rating: 4.3, ratingsCount: 2500, inStock: true, category: 'Audio' },
-            { id: 19, name: 'Portronics Ruffpad', description: 'An electronic writing pad for notes and doodles, from a popular Indian accessories brand.', price: 499, imageUrl: 'https://th.bing.com/th/id/OIP.uVP2CZt6RJ4aj0eBVszxsQHaJh?w=149&h=192&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.1, ratingsCount: 1500, inStock: true, category: 'Accessories' },
-            { id: 20, name: 'Lava Agni 2 5G', description: 'A 5G smartphone from an Indian brand, featuring a curved AMOLED display.', price: 21999, imageUrl: 'https://th.bing.com/th/id/OIP.YxSGtWmhGTBtxGaT5hmwqAHaE7?w=243&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3', isFavorite: false, rating: 4.2, ratingsCount: 600, inStock: true, category: 'Phones' }
-        ],
+    withState<{ products: Product[]; category: string; wishlistItems: Product[]; cartItems: Product[]; isSidebarOpen: boolean; loading: boolean; categories: Category[]; }>({
+        products: [] as Product[],
         category: 'all',
-        wishlistItems: [],
-        cartItems: [],
-        isSidebarOpen: true
+        wishlistItems: [] as Product[],
+        cartItems: [] as Product[],
+        isSidebarOpen: true,
+        loading: false,
+        categories: [] as Category[],
     }),
+    // withComputed(({ products, category, categories }) => ({
     withComputed(({ products, category }) => ({
         filteredProducts: computed(() => {
             if (category().toLowerCase() === 'all') {
@@ -52,66 +42,201 @@ export const electrofyStore = signalStore(
             }
         })
     })),
-    withMethods((store, toaster = inject(Toaster)) => ({
+    withMethods((store, 
+        toaster = inject(Toaster),
+        productService = inject(ProductService),
+        cartService = inject(CartService),
+        wishlistService = inject(WishlistService),
+        authService = inject(AuthService),
+        categoryService = inject(CategoryService)
+    ) => ({
+        async loadProducts() {
+            patchState(store, { loading: true });
+            try {
+                await productService.getProducts({ status: 'active' }).subscribe((products) => {
+                     patchState(store, { products });
+                });
+            } catch (error: any) {
+                console.error('Error loading products:', error);
+                toaster.error(error.message || 'Failed to load products');
+            } finally {
+                patchState(store, { loading: false });
+            }
+        },
+
+        async loadCart() {
+            try {
+                const cart = await cartService.getCart().toPromise();
+                if (cart?.items) {
+                    // Transform cart items to products for display
+                    const cartProducts = cart.items.map((item: any) => ({
+                        id: item.product?._id || item.product?.id,
+                        name: item.product?.name || '',
+                        description: item.product?.description || '',
+                        price: item.price || item.product?.basePrice || 0,
+                        imageUrl: item.product?.images?.[0] || '',
+                        isFavorite: false,
+                        rating: item.product?.averageRating || 0,
+                        ratingsCount: item.product?.ratingCount || 0,
+                        inStock: true,
+                        category: item.product?.category?.name || '',
+                    })) as Product[];
+                    // Ensure correct type: cartProducts is Product[]
+                    patchState(store, { cartItems: cartProducts });
+                }
+            } catch (error: any) {
+                console.error('Error loading cart:', error);
+            }
+        },
+
+        async loadCategories() {
+            try {
+              await categoryService.getCategories().subscribe((categories) => {
+                patchState(store, { categories });
+              });
+            } catch (error: any) {
+                console.error('Error loading categories:', error);
+            }
+        },
+
+        async loadWishlist() {
+            try {
+                const wishlist = await wishlistService.getDefaultWishlist().toPromise();
+                if (wishlist?.items) {
+                    // Transform wishlist items to products for display
+                    const wishlistProducts = wishlist.items.map((item: any) => ({
+                        id: item.product?._id || item.product?.id,
+                        name: item.product?.name || '',
+                        description: item.product?.description || '',
+                        price: item.product?.basePrice || item.product?.price || 0,
+                        imageUrl: item.product?.images?.[0] || '',
+                        isFavorite: true,
+                        rating: item.product?.averageRating || 0,
+                        ratingsCount: item.product?.ratingCount || 0,
+                        inStock: (item.product?.totalStock || 0) > 0,
+                        category: item.product?.category?.name || '',
+                    }));
+                    patchState(store, { wishlistItems: wishlistProducts });
+                }
+            } catch (error: any) {
+                console.error('Error loading wishlist:', error);
+            }
+        },
+
         setCategory(newCategory: string) {
             patchState(store, { category: newCategory });
         },
-        addToWishlist(product: Product) {
-            const updatedWishlist = produce(store.wishlistItems(), (draft: Product[]) => {
-                if (!draft.find(item => item.id === product.id)) {
-                    draft.push(product);
-                }
-            });
-            patchState(store, { wishlistItems: updatedWishlist });
-            toaster.success('Added to wishlist');
 
+        async addToWishlist(product: Product) {
+            try {
+                await wishlistService.addToWishlist(String(product.id)).toPromise();
+                const updatedWishlist = produce(store.wishlistItems(), (draft: Product[]) => {
+                    const existingProduct = { ...product, isFavorite: true };
+                    if (!draft.find(item => item.id === product.id)) {
+                        draft.push(existingProduct);
+                    }
+                });
+                patchState(store, { wishlistItems: updatedWishlist });
+                toaster.success('Added to wishlist');
+            } catch (error: any) {
+                toaster.error(error.message || 'Failed to add to wishlist');
+            }
         },
-        removeFromWishlist(product: Product) {
-            const updatedWishlist = produce(store.wishlistItems(), (draft: Product[]) => {
-                const index = draft.findIndex(item => item.id === product.id);
-                if (index !== -1) {
-                    draft.splice(index, 1);
-                }
-            });
-            patchState(store, { wishlistItems: updatedWishlist });
-            toaster.success('Removed from wishlist');
-        },
-        addToCart(product: Product) {
-            const updatedCart = produce(store.cartItems(), (draft: Product[]) => {
-                if (!draft.find(item => item.id === product.id)) {
-                    draft.push(product);
-                }
-            });
-            patchState(store, { cartItems: updatedCart });
-            toaster.success('Added to cart');
 
-        },
-        removeFromCart(product: Product) {
-            const updatedCart = produce(store.cartItems(), (draft: Product[]) => {
-                const index = draft.findIndex(item => item.id === product.id); 
-                if (index !== -1) {
-                    draft.splice(index, 1);
+        async removeFromWishlist(product: Product) {
+            try {
+                const wishlist = await wishlistService.getDefaultWishlist().toPromise();
+                if (wishlist?._id) {
+                    const item = wishlist.items.find((item: any) => 
+                        (item.product?._id || item.product?.id) === String(product.id)
+                    );
+                    if (item && (item as any)._id) {
+                        await wishlistService.removeFromWishlist(wishlist._id, (item as any)._id).toPromise();
+                    }
                 }
-            });
-            patchState(store, { cartItems: updatedCart });
-            toaster.success('Removed from cart');
+                const updatedWishlist = produce(store.wishlistItems(), (draft: Product[]) => {
+                    const index = draft.findIndex(item => item.id === product.id);
+                    if (index !== -1) {
+                        draft.splice(index, 1);
+                    }
+                });
+                patchState(store, { wishlistItems: updatedWishlist });
+                toaster.success('Removed from wishlist');
+            } catch (error: any) {
+                toaster.error(error.message || 'Failed to remove from wishlist');
+            }
         },
-        clearWishlist() {
-            patchState(store, { wishlistItems: [] });
-            toaster.success('Wishlist cleared');
+
+        async addToCart(product: Product) {
+            try {
+                await cartService.addToCart(String(product.id), 1).toPromise();
+                await this.loadCart();
+                toaster.success('Added to cart');
+            } catch (error: any) {
+                toaster.error(error.message || 'Failed to add to cart');
+            }
         },
-        clearCartItems() {
-            patchState(store, { cartItems: [] });
-            toaster.success('Cart cleared');
-        }, 
+
+        async removeFromCart(product: Product) {
+            try {
+                const cart = await cartService.getCart().toPromise();
+                if (cart?.items) {
+                    const item = cart.items.find((item: any) => 
+                        (item.product?._id || item.product?.id) === String(product.id)
+                    );
+                    if (item && (item as any)._id) {
+                        await cartService.removeCartItem((item as any)._id).toPromise();
+                        await this.loadCart();
+                        toaster.success('Removed from cart');
+                    }
+                }
+            } catch (error: any) {
+                toaster.error(error.message || 'Failed to remove from cart');
+            }
+        },
+
+        async clearWishlist() {
+            try {
+                const wishlist = await wishlistService.getDefaultWishlist().toPromise();
+                if (wishlist?._id) {
+                    await wishlistService.clearWishlist(wishlist._id).toPromise();
+                }
+                patchState(store, { wishlistItems: [] });
+                toaster.success('Wishlist cleared');
+            } catch (error: any) {
+                toaster.error(error.message || 'Failed to clear wishlist');
+            }
+        },
+
+        async clearCartItems() {
+            try {
+                await cartService.clearCart().toPromise();
+                patchState(store, { cartItems: [] });
+                toaster.success('Cart cleared');
+            } catch (error: any) {
+                toaster.error(error.message || 'Failed to clear cart');
+            }
+        },
+
         issideNavOpened() {
             return store.isSidebarOpen();
         },
+
         toggleSidebar() {
             const currentState = store.isSidebarOpen();
             patchState(store, { isSidebarOpen: !currentState });
+        },
+
+        async initialize() {
+            // Load products
+            await this.loadProducts();
+            await this.loadCategories();
+            
+            // Load cart and wishlist if authenticated
+            if (authService.isAuthenticated()) {
+                await this.loadCart();
+                await this.loadWishlist();
+            }
         }
-
     }))
-
 );
