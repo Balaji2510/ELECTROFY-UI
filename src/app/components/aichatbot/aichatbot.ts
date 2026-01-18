@@ -164,9 +164,12 @@ export class Aichatbot implements OnInit, AfterViewChecked {
     // Show typing indicator immediately
     this.isBotTyping = true;
 
-    const botResponse = await this.chatbotService.getResponse(userMsg);
-    this.isBotTyping = false;
-    this.messages.push({ sender: 'bot', text: botResponse });
+    this.chatbotService.getResponse(userMsg).subscribe(botResponse => {
+      console.log(botResponse);
+      
+      this.isBotTyping = false;
+      this.messages.push({ sender: 'bot', text: botResponse });
+    });
   }
 
   private scrollToBottom(): void {

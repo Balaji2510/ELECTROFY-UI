@@ -18,6 +18,7 @@ import { Toaster } from '../../services/toaster';
 import { Product } from '../../models/product';
 import { Review } from '../../models/review';
 import { AuthService } from '../../services/auth.service';
+import { AiService } from '../../services/ai.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -146,10 +147,30 @@ import { AuthService } from '../../services/auth.service';
               </div>
             </div>
 
-            <!-- Product Description -->
             <div class="border-t border-gray-200 pt-6">
-              <h2 class="text-xl font-bold text-gray-900 mb-3">Description</h2>
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xl font-bold text-gray-900">Description</h2>
+                <button 
+                  mat-stroked-button 
+                  color="primary" 
+                  (click)="generateAiDescription()"
+                  [disabled]="generatingDescription()"
+                >
+                  <mat-icon>auto_awesome</mat-icon>
+                  {{ generatingDescription() ? 'Summarizing...' : 'Summarize with AI' }}
+                </button>
+              </div>
               <p class="text-gray-700 whitespace-pre-wrap">{{ product()!.description }}</p>
+              
+              @if (aiDescription()) {
+                <div class="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100 animate-fade-in">
+                  <div class="flex items-center gap-2 mb-2 text-indigo-700">
+                    <mat-icon class="text-sm">auto_awesome</mat-icon>
+                    <span class="font-semibold text-sm">AI Summary</span>
+                  </div>
+                  <p class="text-gray-800 text-sm leading-relaxed">{{ aiDescription() }}</p>
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -203,6 +224,7 @@ export class ProductDetail implements OnInit {
   private store = inject(electrofyStore);
   private toaster = inject(Toaster);
   private authService = inject(AuthService);
+  private aiService = inject(AiService);
 
   product = signal<Product | null>(null);
   variants = signal<ProductVariant[]>([]);
@@ -212,20 +234,22 @@ export class ProductDetail implements OnInit {
   relatedProducts = signal<Product[]>([]);
   loading = signal(true);
   addingToCart = signal(false);
-  
+  aiDescription = signal<string>('');
+  generatingDescription = signal(false);
+
   productId = computed(() => String(this.product()?.id || ''));
-  
+
   productImages = computed(() => {
     const prod = this.product();
     if (!prod) return [];
-    
+
     const variantImage = this.selectedVariant()?.image;
     const allImages = prod.images || [prod.imageUrl].filter(Boolean);
-    
+
     if (variantImage && !allImages.includes(variantImage)) {
       return [variantImage, ...allImages];
     }
-    
+
     return allImages;
   });
 
@@ -356,6 +380,28 @@ export class ProductDetail implements OnInit {
       },
       error: (err) => {
         this.toaster.error(err.message || 'Failed to mark review as helpful');
+      }
+    });
+  }
+
+  generateAiDescription() {
+    const prod = this.product();
+    if (!prod) return;
+
+    this.generatingDescription.set(true);
+    // Use category name if available, otherwise 'electronics'
+    // Assuming product has category field which might be an object or id
+    // Ideally we need category name. Let's pass 'electronics' as fallback or use product.category if it's a string
+    const categoryName = typeof prod.category === 'string' ? prod.category : 'Electronics';
+
+    this.aiService.generateDescription(prod.name, categoryName).subscribe({
+      next: (res) => {
+        this.aiDescription.set(res.description);
+        this.generatingDescription.set(false);
+      },
+      error: (err) => {
+        this.toaster.error('Failed to generate AI summary');
+        this.generatingDescription.set(false);
       }
     });
   }

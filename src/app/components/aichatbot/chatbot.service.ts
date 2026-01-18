@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { QuestionAndAnswer, load } from '@tensorflow-models/qna';
-
+import { Observable, of } from 'rxjs';
+import { AiService } from '../../services/ai.service';
+import { AuthService } from '../../services/auth.service';
 export interface Intent {
     tag: string;
     patterns: string[];
@@ -16,60 +17,35 @@ export interface ChatMessage {
     providedIn: 'root'
 })
 export class ChatbotService {
-    private model: QuestionAndAnswer | null = null;
-    private knowledgeBase: string = '';
 
-    constructor() { }
+    constructor(private aiService: AiService, private authService: AuthService) { }
 
-    public async loadModel() {
-        try {
-            this.buildKnowledgeBase();
-            this.model = await load();
-            console.log('Chatbot Q&A model loaded.');
-        } catch (error) {
-            console.error('Error loading chatbot model or data:', error);
-        }
+    public loadModel() {
+        // No model to load when using the API
+        return Promise.resolve();
     }
 
-    private buildKnowledgeBase(): void {
-        // This passage is what the Q&A model will use to find answers.
-        this.knowledgeBase = `
-            Welcome to Electrofy! We are happy to help you.
-            We sell a wide variety of consumer electronics, including products ranging from laptops to smart home devices.
-            For payments, we accept VISA, Mastercard, and Paypal. We accept most major credit cards.
-            Regarding delivery, shipping takes 2-4 business days. We ship all items within 4 business days.
-            If you need to say goodbye, you can just say bye.
-            Thank you for visiting our store.
-        `;
-    }
-
-    public async getResponse(message: string): Promise<string> {
-        if (!this.model) {
-            return "I'm still warming up. Please try again in a moment.";
-        }
-
+    public getResponse(message: string): Observable<string> {
         // Handle simple greetings and goodbyes without the model for a more natural feel.
         const lowerCaseMessage = message.toLowerCase();
         if (lowerCaseMessage.includes('hello') || lowerCaseMessage.includes('hi') || lowerCaseMessage.includes('hey')) {
-            return "Hello! How can I help you with our electronics today?";
+            return of("Hello! How can I help you with our electronics today?");
         }
         if (lowerCaseMessage.includes('bye')) {
-            return "Goodbye! Have a great day.";
+            return of("Goodbye! Have a great day.");
         }
 
-        try {
-            const answers = await this.model.findAnswers(message, this.knowledgeBase);
+        const userId = this.authService.currentUser()?.id;
 
-            if (answers && answers.length > 0) {
-                // Sort answers by score and return the best one.
-                const bestAnswer = answers.sort((a, b) => b.score - a.score)[0];
-                return bestAnswer.text;
-            }
-        } catch (error) {
-            console.error('Error finding answer:', error);
-            return "I encountered an issue while trying to understand that. Please try again.";
-        }
-
-        return "I'm not sure how to respond to that. Can you try asking another way?";
+        return new Observable(observer => {
+            this.aiService.chat(message, userId).subscribe({
+                next: (response) => {
+                    observer.next(response.reply)
+                    
+                },
+                error: (err) => observer.next("I'm having trouble connecting right now. Please try again later."),
+                complete: () => observer.complete()
+            });
+        });
     }
 }

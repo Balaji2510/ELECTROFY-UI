@@ -24,7 +24,7 @@ import { ShippingAddress } from '../../models/shipping-address';
     <form [formGroup]="addressForm" (ngSubmit)="onSubmit()" class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- First Name -->
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>First Name <span class="text-red-500">*</span></mat-label>
           <input matInput formControlName="firstName" required>
           @if (addressForm.get('firstName')?.hasError('required') && addressForm.get('firstName')?.touched) {
@@ -33,7 +33,7 @@ import { ShippingAddress } from '../../models/shipping-address';
         </mat-form-field>
 
         <!-- Last Name -->
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Last Name <span class="text-red-500">*</span></mat-label>
           <input matInput formControlName="lastName" required>
           @if (addressForm.get('lastName')?.hasError('required') && addressForm.get('lastName')?.touched) {
@@ -43,7 +43,7 @@ import { ShippingAddress } from '../../models/shipping-address';
       </div>
 
       <!-- Phone -->
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Phone Number <span class="text-red-500">*</span></mat-label>
         <input matInput formControlName="phone" type="tel" placeholder="+91 9876543210" required>
         @if (addressForm.get('phone')?.hasError('required') && addressForm.get('phone')?.touched) {
@@ -55,7 +55,7 @@ import { ShippingAddress } from '../../models/shipping-address';
       </mat-form-field>
 
       <!-- Address Line 1 -->
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Address Line 1 <span class="text-red-500">*</span></mat-label>
         <input matInput formControlName="addressLine1" placeholder="Street address, P.O. box" required>
         @if (addressForm.get('addressLine1')?.hasError('required') && addressForm.get('addressLine1')?.touched) {
@@ -64,14 +64,14 @@ import { ShippingAddress } from '../../models/shipping-address';
       </mat-form-field>
 
       <!-- Address Line 2 -->
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Address Line 2 (Optional)</mat-label>
         <input matInput formControlName="addressLine2" placeholder="Apartment, suite, unit, building, floor, etc.">
       </mat-form-field>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- City -->
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>City <span class="text-red-500">*</span></mat-label>
           <input matInput formControlName="city" required>
           @if (addressForm.get('city')?.hasError('required') && addressForm.get('city')?.touched) {
@@ -80,7 +80,7 @@ import { ShippingAddress } from '../../models/shipping-address';
         </mat-form-field>
 
         <!-- State -->
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>State <span class="text-red-500">*</span></mat-label>
           <input matInput formControlName="state" required>
           @if (addressForm.get('state')?.hasError('required') && addressForm.get('state')?.touched) {
@@ -91,7 +91,7 @@ import { ShippingAddress } from '../../models/shipping-address';
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Zip Code -->
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>ZIP Code <span class="text-red-500">*</span></mat-label>
           <input matInput formControlName="zipCode" required>
           @if (addressForm.get('zipCode')?.hasError('required') && addressForm.get('zipCode')?.touched) {
@@ -100,7 +100,7 @@ import { ShippingAddress } from '../../models/shipping-address';
         </mat-form-field>
 
         <!-- Country -->
-        <mat-form-field>
+        <mat-form-field appearance="outline">
           <mat-label>Country <span class="text-red-500">*</span></mat-label>
           <mat-select formControlName="country" required>
             <mat-option value="India">India</mat-option>
@@ -116,7 +116,7 @@ import { ShippingAddress } from '../../models/shipping-address';
       </div>
 
       <!-- Address Type -->
-      <mat-form-field>
+      <mat-form-field appearance="outline">
         <mat-label>Address Type</mat-label>
         <mat-select formControlName="addressType">
           <mat-option value="home">Home</mat-option>

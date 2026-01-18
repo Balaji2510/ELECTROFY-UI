@@ -1,4 +1,5 @@
 import { Component, computed, input, inject, effect, signal } from '@angular/core';
+import { AiService } from '../../services/ai.service';
 import { Product } from '../../models/product';
 import { ProductCard } from '../../components/product-card/product-card';
 import { ProductFilters, FilterOptions } from '../../components/product-filters/product-filters';
@@ -12,17 +13,19 @@ import { electrofyStore } from '../../electrofy-store';
 import { ToggleWishlistButton } from "../../components/toggle-wishlist-button/toggle-wishlist-button";
 import { MatIcon } from '@angular/material/icon';
 import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
 @Component({
   selector: 'app-product-grid',
   imports: [
-    ProductCard, 
-    ProductFilters, 
+    ProductCard,
+    ProductFilters,
     ProductSort,
-    MatSidenavModule, 
-    TitleCasePipe, 
-    ToggleWishlistButton, 
+    MatSidenavModule,
+    TitleCasePipe,
+    ToggleWishlistButton,
     MatIcon,
     MatButton,
+    MatChipsModule
   ],
   template: `
   <mat-sidenav-container class="h-full">
@@ -71,6 +74,23 @@ import { MatButton, MatIconButton } from '@angular/material/button';
               </button>
             </div>
           </div>
+          
+          <!-- AI Recommendations -->
+          @if (recommendations().length > 0) {
+            <div class="mb-6 animate-fade-in">
+              <div class="flex items-center gap-2 mb-2 text-indigo-600">
+                <mat-icon>auto_awesome</mat-icon>
+                <span class="font-semibold">AI Verified Suggestions</span>
+              </div>
+              <mat-chip-set>
+                @for (rec of recommendations(); track rec) {
+                  <mat-chip class="cursor-pointer hover:bg-indigo-50" (click)="searchProduct(rec)">
+                    {{ rec }}
+                  </mat-chip>
+                }
+              </mat-chip-set>
+            </div>
+          }
         </div>
 
         @if (store.loading()) {
@@ -113,17 +133,19 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 export class ProductGrid {
   category = input<string>('all');
   store = inject(electrofyStore);
+  aiService = inject(AiService);
 
   activeFilters = signal<FilterOptions>({});
   currentSort = signal<SortOption>('default');
   showMobileFilters = signal(false);
+  recommendations = signal<string[]>([]);
 
   categories = computed(() => ['All', ...this.store.categories().map(c => c.name)]);
 
   priceRange = computed(() => {
     const products = this.store.filteredProducts();
     if (products.length === 0) return { min: 0, max: 100000 };
-    
+
     const prices = products.map(p => p.price);
     return {
       min: Math.min(...prices),
@@ -142,10 +164,10 @@ export class ProductGrid {
 
   displayedProducts = computed(() => {
     let products = [...this.store.filteredProducts()];
-    
+
     // Apply filters
     const filters = this.activeFilters();
-    
+
     if (filters.minPrice !== undefined) {
       products = products.filter(p => p.price >= filters.minPrice!);
     }
@@ -199,7 +221,7 @@ export class ProductGrid {
         // Default: keep original order
         break;
     }
-    
+
     return products;
   });
 
@@ -210,7 +232,27 @@ export class ProductGrid {
   constructor() {
     effect(() => {
       this.store.setCategory(this.category());
+      this.loadRecommendations();
     });
+  }
+
+  loadRecommendations() {
+    // Only load if not already loaded or category changed
+    const interest = this.category() === 'all' ? 'Top rated electronics' : `Best ${this.category()}`;
+    this.aiService.recommend(interest).subscribe({
+      next: (res) => {
+        if (res.recommendations) {
+          this.recommendations.set(res.recommendations);
+        }
+      },
+      error: (err) => console.error('AI Recommendation failed', err)
+    });
+  }
+
+  searchProduct(term: string) {
+    // Implement search logic or navigate to search result
+    // For now, let's just log or maybe filter?
+    console.log('Searching for:', term);
   }
 
   onFiltersChange(filters: FilterOptions) {
